@@ -11,7 +11,9 @@ import pfp from "../assets/pfp.JPEG";
     <Image
       src={pfp}
       alt="yanpla"
-      class="hidden md:block transition-all w-64 h-64 rounded-full ml-4 hover:p-2 cursor-pointer"
+      loading="eager"
+      fetchpriority="high"
+      class="hidden md:block transition-all w-64 h-64 ml-4 hover:p-2 cursor-pointer rounded-[4rem] [corner-shape:squircle]"
     />
   </button>
 </header>
