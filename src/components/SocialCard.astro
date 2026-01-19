@@ -1,0 +1,62 @@
+---
+interface Props {
+  href: string;
+  title: string;
+  subtitle: string;
+  // Optional props
+  hoverTitle?: string;
+  hoverSubtitle?: string;
+}
+
+const { href, title, subtitle, hoverTitle, hoverSubtitle } = Astro.props;
+
+// Determine if there is hover content (either props or a slot)
+const hasHover = !!(
+  hoverTitle ||
+  hoverSubtitle ||
+  Astro.slots.has("hover-icon")
+);
+---
+
+<a class="m-1 my-1" href={href} target="_blank">
+  <div
+    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground px-4 py-2 w-72 h-32 relative group overflow-hidden"
+  >
+    {/* Front Side */}
+    <div
+      class:list={[
+        "flex flex-row items-center w-full px-6 justify-between absolute transition-all",
+        { "group-hover:-translate-y-48": hasHover },
+      ]}
+    >
+      <div class="mr-2 w-12 h-12 flex items-center justify-center text-current">
+        <slot name="icon" />
+      </div>
+      <div class="flex flex-col text-left">
+        <h2 class="text-xl font-bold">{title}</h2>
+        <p>{subtitle}</p>
+      </div>
+    </div>
+
+    {/* Back Side (Rendered only if hasHover is true) */}
+    {
+      hasHover && (
+        <div class="flex flex-row items-center w-full px-6 justify-between absolute group-hover:translate-y-0 translate-y-48 transition-all">
+          <div class="mr-2 w-12 h-12 flex items-center justify-center text-current">
+            <slot name="hover-icon" />
+          </div>
+          <div class="flex flex-col justify-center items-center text-center">
+            {hoverTitle && (
+              <h2 class="text-xl font-bold flex flex-row items-center">
+                {hoverTitle}
+              </h2>
+            )}
+            {hoverSubtitle && (
+              <p class="flex flex-row items-center">{hoverSubtitle}</p>
+            )}
+          </div>
+        </div>
+      )
+    }
+  </div>
+</a>

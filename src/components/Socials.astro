@@ -1,0 +1,27 @@
+---
+import SocialCard from "./SocialCard.astro";
+import DiscordIcon from "../assets/discord.svg";
+import GithubIcon from "../assets/github.svg";
+import Branch from "../assets/branch.svg";
+---
+
+<div
+  class="mt-16 flex flex-col-reverse md:flex-row-reverse w-full md:pr-[10%] md:justify-normal items-center"
+>
+  {/* Discord Card */}
+  <SocialCard href="/discord" title="Discord" subtitle="@yanpla">
+    <DiscordIcon slot="icon" />
+  </SocialCard>
+
+  {/* GitHub Card */}
+  <SocialCard
+    href="https://github.com/yanpla"
+    title="GitHub"
+    subtitle="@yanpla"
+    hoverTitle="51 repositories"
+    hoverSubtitle="and 2800+ commits"
+  >
+    <GithubIcon slot="icon" />
+    <Branch slot="hover-icon" />
+  </SocialCard>
+</div>

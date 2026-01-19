@@ -1,0 +1,17 @@
+---
+import { Image } from "astro:assets";
+import pfp from "../assets/pfp.JPEG";
+---
+
+<header
+  class="w-full flex flex-row-reverse md:pr-[10%] md:pl-[20%] md:justify-between justify-center"
+>
+  <h1 class="text-4xl font-bold">yanpla</h1>
+  <button>
+    <Image
+      src={pfp}
+      alt="yanpla"
+      class="hidden md:block transition-all w-64 h-64 rounded-full ml-4 hover:p-2 cursor-pointer"
+    />
+  </button>
+</header>
