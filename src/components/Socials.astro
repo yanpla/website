@@ -3,6 +3,31 @@ import SocialCard from "./SocialCard.astro";
 import DiscordIcon from "../assets/discord.svg";
 import GithubIcon from "../assets/github.svg";
 import Branch from "../assets/branch.svg";
+
+const username = "yanpla";
+
+const userResponse = await fetch(`https://api.github.com/users/${username}`);
+const userData = await userResponse.json();
+const repoCount = userData.public_repos || 0;
+
+const commitResponse = await fetch(
+  `https://api.github.com/search/commits?q=author:${username}`,
+  {
+    headers: {
+      // This header is required for the commit search API
+      Accept: "application/vnd.github.cloak-preview",
+    },
+  },
+);
+
+const commitData = await commitResponse.json();
+const totalCommits = commitData.total_count || 0;
+
+// Format the numbers for the display
+const commitDisplay =
+  totalCommits >= 1000
+    ? `${Math.floor(totalCommits / 100) / 10}k+`
+    : totalCommits;
 ---
 
 <div
@@ -18,8 +43,8 @@ import Branch from "../assets/branch.svg";
     href="https://github.com/yanpla"
     title="GitHub"
     subtitle="@yanpla"
-    hoverTitle="51 repositories"
-    hoverSubtitle="and 2800+ commits"
+    hoverTitle={`${repoCount} repositories`}
+    hoverSubtitle={`and ${commitDisplay} commits`}
   >
     <GithubIcon slot="icon" />
     <Branch slot="hover-icon" />
