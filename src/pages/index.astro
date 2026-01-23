@@ -2,11 +2,21 @@
 import Hero from "../components/Hero.astro";
 import Layout from "../layouts/Layout.astro";
 import Socials from "../components/Socials.astro";
+import TopLanguages from "../components/TopLanguages.astro";
 ---
 
 <Layout>
-  <main class="flex flex-col items-center pb-8 mt-56 space-y-16">
-    <Hero />
-    <Socials />
+  <main
+    class="flex flex-col items-center pb-8 mt-56 mb-56 space-y-16 w-full px-6 md:px-[12%]"
+  >
+    <div class="w-full">
+      <Hero />
+    </div>
+    <div class="w-full">
+      <Socials />
+    </div>
+    <div class="w-full">
+      <TopLanguages />
+    </div>
   </main>
 </Layout>
