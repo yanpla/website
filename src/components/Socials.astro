@@ -4,41 +4,70 @@ import DiscordIcon from "../assets/discord.svg";
 import GithubIcon from "../assets/github.svg";
 import Branch from "../assets/branch.svg";
 
+const GITHUB_TOKEN = import.meta.env.GITHUB_TOKEN;
 const username = "yanpla";
+const userId = "287291530685841409";
 
-const userResponse = await fetch(`https://api.github.com/users/${username}`);
-const userData = await userResponse.json();
-const repoCount = userData.public_repos || 0;
+// 1. Fetch GitHub data with Token for higher rate limits
+const headers = { Authorization: `token ${GITHUB_TOKEN}` };
 
-const commitResponse = await fetch(
-  `https://api.github.com/search/commits?q=author:${username}`,
-  {
-    headers: {
-      // This header is required for the commit search API
-      Accept: "application/vnd.github.cloak-preview",
-    },
-  },
-);
+const [githubUserResponse, commitResponse, discordUserResponse] =
+  await Promise.all([
+    fetch(`https://api.github.com/users/${username}`, { headers }),
+    fetch(`https://api.github.com/search/commits?q=author:${username}`, {
+      headers: { ...headers, Accept: "application/vnd.github.cloak-preview" },
+    }),
+    fetch(`https://api.lanyard.rest/v1/users/${userId}`),
+  ]);
 
+const githubUserData = await githubUserResponse.json();
 const commitData = await commitResponse.json();
+const discordUserData = await discordUserResponse.json();
+
+const repoCount = githubUserData.public_repos || 0;
 const totalCommits = commitData.total_count || 0;
 
-// Format the numbers for the display
 const commitDisplay =
-  totalCommits >= 1000
-    ? `${Math.floor(totalCommits / 100) / 10}k+`
-    : totalCommits;
+  totalCommits >= 1000 ? `${(totalCommits / 1000).toFixed(1)}k+` : totalCommits;
+
+// 2. Discord Status Logic
+const discordStatus = discordUserData.data?.discord_status || "offline";
+const statusColors = {
+  online: "#23a55a",
+  idle: "#f0b232",
+  dnd: "#f23f43",
+  offline: "#80848e",
+  streaming: "#593695",
+};
+const currentHex = statusColors[discordStatus] || statusColors.offline;
+
+const activity = discordUserData.data?.activities?.find((a) => a.type === 0);
 ---
 
-<div class="flex flex-col-reverse md:flex-row-reverse md:justify-normal items-center">
-  {/* Discord Card */}
-  <SocialCard href="/discord" title="Discord" subtitle="@yanpla">
+<div
+  class="flex flex-col-reverse md:flex-row-reverse md:justify-normal items-center"
+>
+  <SocialCard
+    href={`https://discord.com/users/${userId}`}
+    title="Discord"
+    subtitle="@yanpla"
+    hoverTitle={`Status: ${discordStatus.charAt(0).toUpperCase() + discordStatus.slice(1)}`}
+    hoverSubtitle={activity
+      ? `Playing ${activity.name}`
+      : "No current activity"}
+  >
     <DiscordIcon slot="icon" />
+    <div
+      slot="hover-icon"
+      style={{ backgroundColor: currentHex }}
+      class="w-4 h-4 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.2)]"
+      style={{ boxShadow: `0 0 12px ${currentHex}` }}
+    >
+    </div>
   </SocialCard>
 
-  {/* GitHub Card */}
   <SocialCard
-    href="https://github.com/yanpla"
+    href={`https://github.com/${username}`}
     title="GitHub"
     subtitle="@yanpla"
     hoverTitle={`${repoCount} repositories`}
