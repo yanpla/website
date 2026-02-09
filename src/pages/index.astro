@@ -3,7 +3,6 @@ import Hero from "../components/Hero.astro";
 import Layout from "../layouts/Layout.astro";
 import Socials from "../components/Socials.astro";
 import TopLanguages from "../components/TopLanguages.astro";
-import SocialsPlaceholder from "../components/SocialsPlaceholder.astro";
 ---
 
 <Layout>
@@ -17,7 +16,7 @@ import SocialsPlaceholder from "../components/SocialsPlaceholder.astro";
       <Socials />
     </div>
     <div class="w-full">
-      <TopLanguages />
+      <TopLanguages server:defer />
     </div>
   </main>
 </Layout>
