@@ -7,6 +7,19 @@ interface Language {
   size: number;
 }
 
+interface Repository {
+  name: string;
+  languages?: {
+    edges: {
+      size: number;
+      node: {
+        color: string;
+        name: string;
+      };
+    }[];
+  };
+}
+
 const GITHUB_TOKEN = import.meta.env.GITHUB_TOKEN;
 const username = "yanpla";
 
@@ -59,14 +72,14 @@ if (!GITHUB_TOKEN) {
     }
 
     const excludeList = ["remnantsoflight"];
-    const repos = json.data?.user?.repositories?.nodes?.filter(
-      (repo: any) => !excludeList.includes(repo.name),
-    ) || [];
+    const repos = (json.data?.user?.repositories?.nodes as Repository[] | undefined)?.filter(
+      (repo) => !excludeList.includes(repo.name),
+    ) ?? [];
 
     const langMap = repos
-      .filter((repo: any) => repo.languages?.edges?.length > 0)
-      .reduce((acc: Record<string, Language>, repo: any) => {
-        repo.languages.edges.forEach((edge: any) => {
+      .filter((repo) => repo.languages?.edges?.length > 0)
+      .reduce<Record<string, Language>>((acc, repo) => {
+        repo.languages!.edges.forEach((edge) => {
           const { name, color } = edge.node;
           if (!acc[name]) {
             acc[name] = { name, color, size: 0 };
@@ -76,7 +89,7 @@ if (!GITHUB_TOKEN) {
         return acc;
       }, {});
 
-    sortedLangs = (Object.values(langMap) as Language[])
+    sortedLangs = Object.values(langMap)
       .sort((a, b) => b.size - a.size)
       .slice(0, 6);
 
