@@ -1,10 +1,14 @@
 ---
 import { Image } from "astro:assets";
 import pfp from "../assets/pfp.jpeg";
+import ThemeToggle from "./ThemeToggle.astro";
 ---
 
-<header class="flex flex-row-reverse md:justify-between justify-center">
-  <h1 class="text-4xl font-bold">yanpla</h1>
+<header class="flex flex-row-reverse md:justify-between justify-center items-start">
+  <div class="flex items-center gap-4">
+    <h1 class="text-4xl font-bold">yanpla</h1>
+    <ThemeToggle />
+  </div>
   <button>
     <Image
       src={pfp}
