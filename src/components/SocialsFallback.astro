@@ -1,0 +1,23 @@
+---
+import SocialCard from "./SocialCard.astro";
+import DiscordIcon from "../assets/discord.svg";
+import GithubIcon from "../assets/github.svg";
+---
+
+<div class="flex flex-col-reverse md:flex-row-reverse md:justify-normal items-center">
+  <SocialCard
+    href="https://discord.com/users/287291530685841409"
+    title="Discord"
+    subtitle="@yanpla"
+  >
+    <DiscordIcon slot="icon" />
+  </SocialCard>
+
+  <SocialCard
+    href="https://github.com/yanpla"
+    title="GitHub"
+    subtitle="@yanpla"
+  >
+    <GithubIcon slot="icon" />
+  </SocialCard>
+</div>

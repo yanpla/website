@@ -3,6 +3,8 @@ import Hero from "../components/Hero.astro";
 import Layout from "../layouts/Layout.astro";
 import Socials from "../components/Socials.astro";
 import TopLanguages from "../components/TopLanguages.astro";
+import SocialsFallback from "../components/SocialsFallback.astro";
+import TopLanguagesFallback from "../components/TopLanguagesFallback.astro";
 ---
 
 <Layout>
@@ -13,10 +15,14 @@ import TopLanguages from "../components/TopLanguages.astro";
       <Hero />
     </div>
     <div class="w-full">
-      <Socials />
+      <Socials server:defer>
+        <SocialsFallback slot="fallback" />
+      </Socials>
     </div>
     <div class="w-full">
-      <TopLanguages server:defer />
+      <TopLanguages server:defer>
+        <TopLanguagesFallback slot="fallback" />
+      </TopLanguages>
     </div>
   </main>
 </Layout>

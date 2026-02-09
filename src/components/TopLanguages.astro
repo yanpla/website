@@ -110,9 +110,7 @@ if (!GITHUB_TOKEN) {
 
     {
       error ? (
-        <div class="text-sm text-red-400 opacity-75">
-          failed to load: {error}
-        </div>
+        <div class="text-sm text-red-400 opacity-75">failed to load: {error}</div>
       ) : sortedLangs.length === 0 ? (
         <div class="text-sm opacity-50">no languages found</div>
       ) : (

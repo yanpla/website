@@ -4,11 +4,17 @@ import pfp from "../assets/pfp.jpeg";
 import ThemeToggle from "./ThemeToggle.astro";
 ---
 
-<header class="flex flex-row-reverse md:justify-between justify-center items-start">
-  <div class="flex items-center gap-4">
-    <h1 class="text-4xl font-bold">yanpla</h1>
-    <ThemeToggle />
+<header
+  class="flex flex-row-reverse md:justify-between justify-center items-start"
+>
+  <div class="relative inline-flex items-center">
+    <h1 class="text-4xl font-bold leading-none">yanpla</h1>
+
+    <div class="absolute left-full top-1/2 -translate-y-1/2 ml-3 mt-1">
+      <ThemeToggle />
+    </div>
   </div>
+
   <button>
     <Image
       src={pfp}
