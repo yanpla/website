@@ -144,6 +144,13 @@
             platforms = platforms.all;
           };
         };
+
+        apps.default = {
+          type = "app";
+          program = "${pkgs.writeShellScript "yanpla-website" ''
+            exec ${pkgs.bun}/bin/bun ${self.packages.${system}.default}/server/entry.mjs
+          ''}";
+        };
       }
     )
     // {
