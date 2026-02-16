@@ -139,7 +139,7 @@
 
           meta = with pkgs.lib; {
             description = "yanpla personal website built with Astro";
-            homepage = "https://yanpla.com";
+            homepage = "https://yanpla.nl";
             license = licenses.mit;
             platforms = platforms.all;
           };
