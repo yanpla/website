@@ -102,43 +102,48 @@ if (!GITHUB_TOKEN) {
 ---
 
 <section>
-  <div class="flex flex-col space-y-4">
-    <div class="flex justify-between items-end">
-      <h2 class="text-2xl font-bold">top languages</h2>
-      <span class="text-xs opacity-50 font-mono">based on github bytes</span>
+  <div class="flex flex-col space-y-5">
+    <div class="flex justify-between items-baseline">
+      <h2 class="text-2xl font-bold tracking-tight">top languages</h2>
+      <span class="text-xs text-muted-foreground font-mono tracking-wide">based on github bytes</span>
     </div>
 
     {
       error ? (
-        <div class="text-sm text-red-400 opacity-75">failed to load: {error}</div>
+        <div class="text-sm text-muted-foreground animate-entrance">failed to load: {error}</div>
       ) : sortedLangs.length === 0 ? (
-        <div class="text-sm opacity-50">no languages found</div>
+        <div class="text-sm text-muted-foreground animate-entrance">no languages found</div>
       ) : (
         <>
-          {/* The Progress Bar */}
-          <div class="flex w-full h-3 overflow-hidden rounded-full bg-border">
-            {sortedLangs.map((lang) => (
-              <div
-                style={{
-                  width: `${(lang.size / totalSize) * 100}%`,
-                  backgroundColor: lang.color,
-                }}
-                class="h-full hover:opacity-80 transition-opacity"
-                title={`${lang.name} ${Math.round((lang.size / totalSize) * 100)}%`}
-              />
-            ))}
+          {/* Progress Bar */}
+          <div class="flex w-full h-2.5 overflow-hidden rounded-full bg-muted">
+            <div class="flex w-full h-full animate-bar-fill">
+              {sortedLangs.map((lang) => (
+                <div
+                  style={{
+                    width: `${(lang.size / totalSize) * 100}%`,
+                    backgroundColor: lang.color,
+                  }}
+                  class="h-full transition-opacity duration-200 hover:opacity-75"
+                  title={`${lang.name} ${Math.round((lang.size / totalSize) * 100)}%`}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* The Legend */}
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-y-2 gap-x-4">
-            {sortedLangs.map((lang) => (
-              <div class="flex items-center space-x-2">
+          {/* Legend */}
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-y-2.5 gap-x-4">
+            {sortedLangs.map((lang, i) => (
+              <div
+                class="flex items-center space-x-2 animate-entrance"
+                style={`animation-delay: ${0.1 + i * 0.05}s;`}
+              >
                 <div
-                  class="w-3 h-3 rounded-full"
+                  class="w-2.5 h-2.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: lang.color }}
                 />
-                <span class="text-sm font-medium">{lang.name}</span>
-                <span class="text-xs opacity-50">
+                <span class="text-sm font-medium truncate">{lang.name}</span>
+                <span class="text-xs text-muted-foreground tabular-nums">
                   {Math.round((lang.size / totalSize) * 100)}%
                 </span>
               </div>

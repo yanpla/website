@@ -4,24 +4,21 @@ import pfp from "../assets/pfp.jpeg";
 import ThemeToggle from "./ThemeToggle.astro";
 ---
 
-<header
-  class="flex flex-row-reverse md:justify-between justify-center items-start"
->
+<header class="flex flex-col items-center gap-6 md:flex-row-reverse md:justify-between md:items-center">
   <div class="relative inline-flex items-center">
-    <h1 class="text-4xl font-bold leading-none">yanpla</h1>
-
-    <div class="absolute left-full top-1/2 -translate-y-1/2 ml-3 mt-1">
+    <h1 class="text-3xl md:text-4xl font-bold leading-none tracking-tight">yanpla</h1>
+    <div class="absolute left-full top-1/2 -translate-y-1/2 ml-3">
       <ThemeToggle />
     </div>
   </div>
 
-  <button>
-    <Image
-      src={pfp}
-      alt="yanpla"
-      loading="eager"
-      fetchpriority="high"
-      class="hidden md:block transition-all w-64 h-64 ml-4 hover:p-2 cursor-pointer rounded-[4rem] [corner-shape:squircle]"
-    />
-  </button>
+  <Image
+    src={pfp}
+    alt="yanpla's avatar"
+    width={256}
+    height={256}
+    loading="eager"
+    fetchpriority="high"
+    class="block w-24 h-24 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-[1.5rem] md:rounded-[3.5rem] [corner-shape:squircle] shadow-[--shadow-image] transition-transform duration-300 ease-[--ease-spring] hover:scale-[0.96] active:scale-[0.93] cursor-pointer select-none"
+  />
 </header>

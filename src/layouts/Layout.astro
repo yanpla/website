@@ -3,24 +3,33 @@ import "../styles/global.css";
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class="no-transition">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
     <title>yanpla</title>
+    <meta name="description" content="yanpla's personal corner of the internet. Developer, gamer, maker of things." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="yanpla" />
+    <meta property="og:description" content="yanpla's personal corner of the internet. Developer, gamer, maker of things." />
+    <meta property="og:site_name" content="yanpla" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="yanpla" />
+    <meta name="twitter:description" content="yanpla's personal corner of the internet. Developer, gamer, maker of things." />
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)" />
     <script is:inline>
       (function() {
-        const theme = localStorage.getItem('theme') || 
-          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        if (theme === 'dark') {
-          document.documentElement.classList.add('dark');
-        }
+        var d = document.documentElement;
+        var theme = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        if (theme === 'dark') d.classList.add('dark');
+        requestAnimationFrame(function() { requestAnimationFrame(function() { d.classList.remove('no-transition'); }); });
       })();
     </script>
   </head>
-  <body class="min-h-screen bg-background text-foreground transition-colors">
+  <body class="min-h-screen bg-background text-foreground">
     <slot />
   </body>
 </html>

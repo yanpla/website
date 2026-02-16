@@ -9,20 +9,22 @@ import TopLanguagesFallback from "../components/TopLanguagesFallback.astro";
 
 <Layout>
   <main
-    class="flex flex-col items-center pb-8 mt-56 mb-56 space-y-16 w-full px-6 md:px-[12%]"
+    class="flex flex-col items-center justify-center min-h-screen w-full px-6 md:px-[12%] lg:px-[16%] py-20"
   >
-    <div class="w-full">
-      <Hero />
-    </div>
-    <div class="w-full">
-      <Socials server:defer>
-        <SocialsFallback slot="fallback" />
-      </Socials>
-    </div>
-    <div class="w-full">
-      <TopLanguages server:defer>
-        <TopLanguagesFallback slot="fallback" />
-      </TopLanguages>
+    <div class="flex flex-col space-y-16 w-full max-w-3xl">
+      <div class="w-full animate-entrance animate-entrance-1">
+        <Hero />
+      </div>
+      <div class="w-full animate-entrance animate-entrance-2">
+        <Socials server:defer>
+          <SocialsFallback slot="fallback" />
+        </Socials>
+      </div>
+      <div class="w-full">
+        <TopLanguages server:defer>
+          <TopLanguagesFallback slot="fallback" />
+        </TopLanguages>
+      </div>
     </div>
   </main>
 </Layout>

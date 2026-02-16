@@ -10,7 +10,6 @@ const GITHUB_TOKEN = import.meta.env.GITHUB_TOKEN;
 const username = "yanpla";
 const userId = "287291530685841409";
 
-// 1. Fetch GitHub data with Token for higher rate limits
 const headers = { Authorization: `token ${GITHUB_TOKEN}` };
 
 const [githubUserResponse, commitResponse, discordUserResponse] =
@@ -28,33 +27,23 @@ const discordUserData = await discordUserResponse.json();
 
 const repoCount = githubUserData.public_repos || 0;
 const totalCommits = commitData.total_count || 0;
-
 const commitDisplay =
-  totalCommits >= 1000 ? `${(totalCommits / 1000).toFixed(1)}k+` : totalCommits;
+  totalCommits >= 1000 ? `${(totalCommits / 1000).toFixed(1)}k+` : `${totalCommits}`;
 
-// 2. Discord Status Logic
 type DiscordStatus = "online" | "idle" | "dnd" | "offline" | "streaming";
-interface DiscordActivity {
-  type: number;
-  name: string;
-}
-const discordStatus =
-  (discordUserData.data?.discord_status as DiscordStatus) ?? "offline";
-const statusColors = {
-  online: "#23a55a",
-  idle: "#f0b232",
-  dnd: "#f23f43",
-  offline: "#80848e",
-  streaming: "#593695",
-} satisfies Record<DiscordStatus, string>;
-const currentHex = statusColors[discordStatus] ?? statusColors.offline;
+interface DiscordActivity { type: number; name: string; }
 
-const activity = (
-  discordUserData.data?.activities as DiscordActivity[] | undefined
-)?.find((a) => a.type === 0);
+const discordStatus = (discordUserData.data?.discord_status as DiscordStatus) ?? "offline";
+const statusColors: Record<DiscordStatus, string> = {
+  online: "#23a55a", idle: "#f0b232", dnd: "#f23f43", offline: "#80848e", streaming: "#593695",
+};
+const statusColor = statusColors[discordStatus] ?? statusColors.offline;
+
+const activity = (discordUserData.data?.activities as DiscordActivity[] | undefined)
+  ?.find((a) => a.type === 0);
 ---
 
-<div class="flex flex-col-reverse md:flex-row-reverse md:justify-normal items-center">
+<div class="flex flex-col md:flex-row-reverse md:justify-normal items-center gap-2">
   <SocialCard
     href={`https://discord.com/users/${userId}`}
     title="Discord"
@@ -65,10 +54,9 @@ const activity = (
     <DiscordIcon slot="icon" />
     <div
       slot="hover-icon"
-      style={{ backgroundColor: currentHex }}
-      class="w-4 h-4 rounded-full"
-    >
-    </div>
+      class="w-3.5 h-3.5 rounded-full"
+      style={{ backgroundColor: statusColor, boxShadow: `0 0 6px ${statusColor}` }}
+    />
   </SocialCard>
 
   <SocialCard

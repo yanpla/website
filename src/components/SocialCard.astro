@@ -8,47 +8,36 @@ interface Props {
 }
 
 const { href, title, subtitle, hoverTitle, hoverSubtitle } = Astro.props;
-
-const hasHover = !!(
-  hoverTitle ||
-  hoverSubtitle ||
-  Astro.slots.has("hover-icon")
-);
+const hasHover = !!(hoverTitle || hoverSubtitle || Astro.slots.has("hover-icon"));
 ---
 
-<a class="m-1" href={href} target="_blank">
-  <div
-    class="inline-flex items-center justify-center rounded-2xl [corner-shape:squircle] border bg-background shadow-sm hover:bg-accent hover:text-accent-foreground w-72 h-32 relative group overflow-hidden"
-  >
-    {/* Front Side */}
-    <div
-      class:list={[
-        "flex flex-row items-center w-full px-6 justify-between absolute transition-all",
-        { "group-hover:-translate-y-48": hasHover },
-      ]}
-    >
-      <div class="mr-2 w-12 h-12 flex items-center justify-center text-current">
+<a href={href} target="_blank" rel="noopener noreferrer" class="m-1">
+  <div class="inline-flex items-center justify-center w-72 h-32 rounded-2xl [corner-shape:squircle] border border-border bg-card text-card-foreground shadow-[--shadow-card] hover:shadow-[--shadow-card-hover] hover:bg-accent hover:text-accent-foreground hover:scale-[1.02] active:scale-[0.98] transition-[transform,box-shadow,background-color,color] duration-300 ease-[--ease-spring] relative group overflow-hidden">
+    {/* Front */}
+    <div class:list={[
+      "flex items-center w-full px-6 justify-between absolute transition-[transform,opacity] duration-300 ease-[--ease-spring]",
+      { "group-hover:-translate-y-20 group-hover:opacity-0": hasHover },
+    ]}>
+      <div class="mr-3 w-10 h-10 flex items-center justify-center opacity-80">
         <slot name="icon" />
       </div>
       <div class="flex flex-col text-left">
-        <h2 class="text-xl font-bold">{title}</h2>
-        <p>{subtitle}</p>
+        <h2 class="text-lg font-semibold tracking-tight">{title}</h2>
+        <p class="text-sm text-muted-foreground">{subtitle}</p>
       </div>
     </div>
 
-    {/* Back Side */}
-    {
-      hasHover && (
-        <div class="flex flex-row items-center w-full px-6 justify-between absolute group-hover:translate-y-0 translate-y-48 transition-all">
-          <div class="mr-2 w-12 h-12 flex items-center justify-center text-current">
-            <slot name="hover-icon" />
-          </div>
-          <div class="flex flex-col text-center">
-            {hoverTitle && <h2 class="text-xl font-bold">{hoverTitle}</h2>}
-            {hoverSubtitle && <p>{hoverSubtitle}</p>}
-          </div>
+    {/* Back */}
+    {hasHover && (
+      <div class="flex items-center w-full px-6 justify-between absolute translate-y-20 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-[transform,opacity] duration-300 ease-[--ease-spring]">
+        <div class="mr-3 w-10 h-10 flex items-center justify-center">
+          <slot name="hover-icon" />
         </div>
-      )
-    }
+        <div class="flex flex-col text-center">
+          {hoverTitle && <h2 class="text-lg font-semibold tracking-tight">{hoverTitle}</h2>}
+          {hoverSubtitle && <p class="text-sm text-muted-foreground">{hoverSubtitle}</p>}
+        </div>
+      </div>
+    )}
   </div>
 </a>
