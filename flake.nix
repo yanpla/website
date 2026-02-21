@@ -1,64 +1,67 @@
 {
-  description = "yanpla's personal website";
+  description = "yanpla website";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-    bun2nix = {
-      url = "github:nix-community/bun2nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    systems.url = "github:nix-systems/default";
+
+    bun2nix.url = "github:nix-community/bun2nix?tag=2.0.8";
+    bun2nix.inputs.nixpkgs.follows = "nixpkgs";
+    bun2nix.inputs.systems.follows = "systems";
+  };
+
+  # Use the cached version of bun2nix from the nix-community cli
+  nixConfig = {
+    extra-substituters = [
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+    ];
   };
 
   outputs =
+    inputs:
+    let
+      # Read each system from the nix-systems input
+      eachSystem = inputs.nixpkgs.lib.genAttrs (import inputs.systems);
+
+      # Access the package set for a given system
+      pkgsFor = eachSystem (
+        system:
+        import inputs.nixpkgs {
+          inherit system;
+          # Use the bun2nix overlay, which puts `bun2nix` in pkgs
+          # You can, of course, still access
+          # inputs.bun2nix.packages.${system}.default instead
+          # and use that to build your package instead
+          overlays = [ inputs.bun2nix.overlays.default ];
+        }
+      );
+    in
     {
-      self,
-      nixpkgs,
-      flake-utils,
-      bun2nix,
-    }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-      in
-      {
-        packages.default = pkgs.stdenv.mkDerivation {
-          pname = "yanpla-website";
-          version = "0.0.1";
-          src = ./.;
+      packages = eachSystem (system: {
+        # Produce a package for this template with bun2nix in
+        # the overlay
+        default = pkgsFor.${system}.callPackage ./default.nix { };
+      });
 
-          nativeBuildInputs = [
-            pkgs.bun
-            bun2nix.packages.${system}.default
+      devShells = eachSystem (system: {
+        default = pkgsFor.${system}.mkShell {
+          packages = with pkgsFor.${system}; [
+            bun
+
+            # Add the bun2nix binary to our devshell
+            # Optional now that we have a binary on npm
+            bun2nix
           ];
 
-          configurePhase = ''
-            bun2nix install --bun-nix ./bun.nix --node-modules-dir ./node_modules
-          '';
-
-          buildPhase = ''
-            export HOME=$(mktemp -d)
-            bun run build
-          '';
-
-          installPhase = ''
-            mkdir -p $out
-            cp -r dist/* $out/
-          '';
-        };
-
-        devShells.default = pkgs.mkShell {
-          packages = [
-            pkgs.bun
-            bun2nix.packages.${system}.default
-          ];
           shellHook = ''
-            echo "🚀 yanpla website dev shell"
-            echo "bun run dev   - start dev server"
-            echo "bun2nix       - regenerate bun.nix after updating deps"
+            bun install --frozen-lockfile
           '';
         };
-      }
-    );
+      });
+    };
 }

@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "postinstall": "bun2nix -o bun.nix"
   },
   "dependencies": {
     "@astrojs/node": "10.0.0-beta.4",
