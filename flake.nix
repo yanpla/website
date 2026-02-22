@@ -3,14 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    systems.url = "github:nix-systems/default";
-
     bun2nix.url = "github:nix-community/bun2nix?tag=2.0.8";
     bun2nix.inputs.nixpkgs.follows = "nixpkgs";
-    bun2nix.inputs.systems.follows = "systems";
   };
 
-  # Use the cached version of bun2nix from the nix-community cli
   nixConfig = {
     extra-substituters = [
       "https://cache.nixos.org"
@@ -23,45 +19,94 @@
   };
 
   outputs =
-    inputs:
+    { self
+    , nixpkgs
+    , bun2nix
+    }:
     let
-      # Read each system from the nix-systems input
-      eachSystem = inputs.nixpkgs.lib.genAttrs (import inputs.systems);
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
-      # Access the package set for a given system
-      pkgsFor = eachSystem (
-        system:
-        import inputs.nixpkgs {
+      pkgsFor = system:
+        import nixpkgs {
           inherit system;
-          # Use the bun2nix overlay, which puts `bun2nix` in pkgs
-          # You can, of course, still access
-          # inputs.bun2nix.packages.${system}.default instead
-          # and use that to build your package instead
-          overlays = [ inputs.bun2nix.overlays.default ];
-        }
-      );
-    in
-    {
-      packages = eachSystem (system: {
-        # Produce a package for this template with bun2nix in
-        # the overlay
-        default = pkgsFor.${system}.callPackage ./default.nix { };
-      });
+          overlays = [ bun2nix.overlays.default ];
+        };
 
-      devShells = eachSystem (system: {
-        default = pkgsFor.${system}.mkShell {
-          packages = with pkgsFor.${system}; [
-            bun
-
-            # Add the bun2nix binary to our devshell
-            # Optional now that we have a binary on npm
-            bun2nix
-          ];
-
-          shellHook = ''
-            bun install --frozen-lockfile
+      websiteDrv = system:
+        let pkgs = pkgsFor system;
+        in pkgs.bun2nix.mkDerivation {
+          pname = "yanpla-website";
+          version = "0.0.1";
+          src = ./.;
+          packageJson = ./package.json;
+          bunDeps = pkgs.bun2nix.fetchBunDeps { bunNix = ./bun.nix; };
+          buildPhase = "bun run build";
+          installPhase = ''
+            mkdir -p $out
+            cp -r dist/* $out/
           '';
         };
+    in
+    {
+      packages = forAllSystems (system: {
+        default = websiteDrv system;
       });
+
+      devShells = forAllSystems (system: {
+        default = let pkgs = pkgsFor system;
+        in pkgs.mkShell {
+          packages = [ pkgs.bun pkgs.bun2nix ];
+          shellHook = "bun install --frozen-lockfile";
+        };
+      });
+
+      nixosModules.default = { config, lib, pkgs, ... }:
+        let cfg = config.services.yanpla-website;
+        in {
+          options.services.yanpla-website = {
+            enable = lib.mkEnableOption "yanpla website";
+            port = lib.mkOption {
+              type = lib.types.port;
+              default = 4321;
+            };
+          };
+
+          config = lib.mkIf cfg.enable {
+            systemd.services.yanpla-website = {
+              description = "yanpla website";
+              wantedBy = [ "multi-user.target" ];
+              after = [ "network.target" ];
+              environment = {
+                HOST = "127.0.0.1";
+                PORT = toString cfg.port;
+                NODE_ENV = "production";
+              };
+              serviceConfig = {
+                Type = "simple";
+                Restart = "always";
+                User = "yanpla-website";
+                Group = "yanpla-website";
+                WorkingDirectory = "${self.packages.${pkgs.system}.default}";
+                ExecStart = "${self.packages.${pkgs.system}.default}/server/entry.mjs";
+              };
+            };
+
+            users.users.yanpla-website = {
+              isSystemUser = true;
+              group = "yanpla-website";
+            };
+            users.groups.yanpla-website = {};
+
+            services.nginx = {
+              enable = true;
+              recommendedProxySettings = true;
+              virtualHosts."_".locations."/" = {
+                proxyPass = "http://127.0.0.1:${toString cfg.port}";
+                proxyWebsockets = true;
+              };
+            };
+          };
+        };
     };
 }
