@@ -18,20 +18,15 @@
     ];
   };
 
-  outputs =
-    { self
-    , nixpkgs
-    , bun2nix
-    }:
+  outputs = { self, nixpkgs, bun2nix }:
     let
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
-      pkgsFor = system:
-        import nixpkgs {
-          inherit system;
-          overlays = [ bun2nix.overlays.default ];
-        };
+      pkgsFor = system: import nixpkgs {
+        inherit system;
+        overlays = [ bun2nix.overlays.default ];
+      };
 
       websiteDrv = system:
         let pkgs = pkgsFor system;
@@ -70,6 +65,10 @@
               type = lib.types.port;
               default = 4321;
             };
+            host = lib.mkOption {
+              type = lib.types.str;
+              default = "0.0.0.0";
+            };
           };
 
           config = lib.mkIf cfg.enable {
@@ -78,7 +77,7 @@
               wantedBy = [ "multi-user.target" ];
               after = [ "network.target" ];
               environment = {
-                HOST = "127.0.0.1";
+                HOST = cfg.host;
                 PORT = toString cfg.port;
                 NODE_ENV = "production";
               };
@@ -88,7 +87,7 @@
                 User = "yanpla-website";
                 Group = "yanpla-website";
                 WorkingDirectory = "${self.packages.${pkgs.system}.default}";
-                ExecStart = "${self.packages.${pkgs.system}.default}/server/entry.mjs";
+                ExecStart = "${pkgs.bun}/bin/bun ${self.packages.${pkgs.system}.default}/server/entry.mjs";
               };
             };
 
@@ -97,15 +96,6 @@
               group = "yanpla-website";
             };
             users.groups.yanpla-website = {};
-
-            services.nginx = {
-              enable = true;
-              recommendedProxySettings = true;
-              virtualHosts."_".locations."/" = {
-                proxyPass = "http://127.0.0.1:${toString cfg.port}";
-                proxyWebsockets = true;
-              };
-            };
           };
         };
     };
