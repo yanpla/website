@@ -5,10 +5,10 @@
     "": {
       "name": "website",
       "dependencies": {
-        "@astrojs/node": "latest",
-        "@tailwindcss/vite": "latest",
-        "astro": "latest",
-        "tailwindcss": "latest",
+        "@astrojs/node": "10.0.1",
+        "@tailwindcss/vite": "^4.2.1",
+        "astro": "6.0.4",
+        "tailwindcss": "^4.2.1",
       },
     },
   },
