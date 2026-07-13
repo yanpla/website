@@ -1,5 +1,5 @@
 {
-  description = "Astro website dev environment";
+  description = "Astro website dev environment (Vite+)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -29,7 +29,11 @@
           ];
 
           shellHook = ''
-            echo "bun $(bun --version) · node $(node --version) · vite-plus $(vp --version 2>/dev/null || echo '?')"
+            # Vite+ ships its own downloaded Node runtime, which can't run on
+            # NixOS. Switch vp to "system-first" mode so it uses the Node
+            # provided here instead of the managed binary.
+            vp env off >/dev/null 2>&1 || true
+            echo "node $(node --version) · bun $(bun --version) · vp ready"
           '';
         };
       }
