@@ -78,7 +78,7 @@ if (!GITHUB_TOKEN) {
       )?.filter((repo) => !excludeList.includes(repo.name)) ?? [];
 
     const langMap = repos
-      .filter((repo) => repo.languages?.edges?.length! > 0)
+      .filter((repo) => (repo.languages?.edges?.length ?? 0) > 0)
       .reduce<Record<string, Language>>((acc, repo) => {
         repo.languages!.edges.forEach((edge) => {
           const { name, color } = edge.node;
