@@ -7,98 +7,89 @@ interface Language {
   size: number;
 }
 
-interface Repository {
+interface Repo {
   name: string;
-  languages?: {
-    edges: {
-      size: number;
-      node: {
-        color: string;
-        name: string;
-      };
-    }[];
-  };
+  fork: boolean;
+  languages_url: string;
 }
 
-const GITHUB_TOKEN = import.meta.env.GITHUB_TOKEN;
 const username = "yanpla";
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+// Module-level cache so we stay well under GitHub's 60 req/hour anonymous limit
+const globalCache = globalThis as typeof globalThis & {
+  __topLangsCache?: { data: Language[]; fetchedAt: number };
+};
 
 let sortedLangs: Language[] = [];
 let totalSize = 0;
 let error: string | null = null;
 
-if (!GITHUB_TOKEN) {
-  error = "GitHub token not configured";
+const cached = globalCache.__topLangsCache;
+if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
+  sortedLangs = cached.data;
 } else {
   try {
-    const query = `
-      query userInfo($login: String!) {
-        user(login: $login) {
-          repositories(ownerAffiliations: [OWNER, COLLABORATOR], isFork: false, first: 100, privacy: PUBLIC) {
-            nodes {
-              name
-              languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
-                edges {
-                  size
-                  node {
-                    color
-                    name
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
+    // Colors come from GitHub's public linguist data
+    const colorsResponse = await fetch(
+      "https://raw.githubusercontent.com/ozh/github-colors/master/colors.json",
+    );
+    const colors: Record<string, { color: string | null }> = colorsResponse.ok
+      ? await colorsResponse.json()
+      : {};
 
-    const response = await fetch("https://api.github.com/graphql", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ query, variables: { login: username } }),
-    });
+    const reposResponse = await fetch(
+      `https://api.github.com/users/${username}/repos?per_page=100&type=owner`,
+      { headers: { Accept: "application/vnd.github+json" } },
+    );
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const json = await response.json();
-
-    if (json.errors) {
-      throw new Error(json.errors[0]?.message || "GraphQL error");
+    if (!reposResponse.ok) {
+      throw new Error(`HTTP error! status: ${reposResponse.status}`);
     }
 
     const excludeList = ["remnantsoflight"];
-    const repos =
-      (
-        json.data?.user?.repositories?.nodes as Repository[] | undefined
-      )?.filter((repo) => !excludeList.includes(repo.name)) ?? [];
+    const repos = ((await reposResponse.json()) as Repo[]).filter(
+      (repo) => !repo.fork && !excludeList.includes(repo.name),
+    );
 
-    const langMap = repos
-      .filter((repo) => (repo.languages?.edges?.length ?? 0) > 0)
-      .reduce<Record<string, Language>>((acc, repo) => {
-        repo.languages!.edges.forEach((edge) => {
-          const { name, color } = edge.node;
-          if (!acc[name]) {
-            acc[name] = { name, color, size: 0 };
-          }
-          acc[name].size += edge.size;
+    const languageResults = await Promise.all(
+      repos.map(async (repo) => {
+        const res = await fetch(repo.languages_url, {
+          headers: { Accept: "application/vnd.github+json" },
         });
+        if (!res.ok) return {};
+        return (await res.json()) as Record<string, number>;
+      }),
+    );
+
+    const langMap = languageResults.reduce<Record<string, Language>>(
+      (acc, langs) => {
+        for (const [name, size] of Object.entries(langs)) {
+          if (!acc[name]) {
+            acc[name] = {
+              name,
+              color: colors[name]?.color ?? "#8b8b8b",
+              size: 0,
+            };
+          }
+          acc[name].size += size;
+        }
         return acc;
-      }, {});
+      },
+      {},
+    );
 
     sortedLangs = Object.values(langMap)
       .sort((a, b) => b.size - a.size)
       .slice(0, 6);
 
-    totalSize = sortedLangs.reduce((acc, curr) => acc + curr.size, 0);
+    globalCache.__topLangsCache = { data: sortedLangs, fetchedAt: Date.now() };
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to fetch languages";
   }
 }
+
+totalSize = sortedLangs.reduce((acc, curr) => acc + curr.size, 0);
 ---
 
 <section>
