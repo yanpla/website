@@ -10,14 +10,22 @@ interface Language {
 interface Repo {
   name: string;
   fork: boolean;
+  size: number;
   languages_url: string;
 }
 
 const username = "yanpla";
-// 2 hours: a refresh costs ~50 anonymous API requests against a 60/hour limit
-const CACHE_TTL = 2 * 60 * 60 * 1000;
+// A permissionless fine-grained PAT, required: it lifts the API rate limit
+// from 60/hour (shared per server IP) to 5000/hour
+const GITHUB_TOKEN =
+  import.meta.env.GITHUB_TOKEN ?? process.env.GITHUB_TOKEN;
+const ghHeaders = {
+  Accept: "application/vnd.github+json",
+  "User-Agent": username,
+  Authorization: `Bearer ${GITHUB_TOKEN}`,
+};
 
-// Module-level cache so we stay well under GitHub's 60 req/hour anonymous limit
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 const globalCache = globalThis as typeof globalThis & {
   __topLangsCache?: { data: Language[]; fetchedAt: number };
 };
@@ -27,13 +35,15 @@ let totalSize = 0;
 let error: string | null = null;
 
 const cached = globalCache.__topLangsCache;
-if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
+if (!GITHUB_TOKEN) {
+  error = "GitHub token not configured";
+} else if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
   sortedLangs = cached.data;
 } else {
   try {
     // Colors come from GitHub's public linguist data
     const colorsResponse = await fetch(
-      "https://raw.githubusercontent.com/ozh/github-colors/master/colors.json",
+      "https://raw.githubusercontent.com/IonicaBizau/github-colors/refs/heads/master/lib/colors.json",
     );
     const colors: Record<string, { color: string | null }> = colorsResponse.ok
       ? await colorsResponse.json()
@@ -41,7 +51,7 @@ if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
 
     const reposResponse = await fetch(
       `https://api.github.com/users/${username}/repos?per_page=100&type=owner`,
-      { headers: { Accept: "application/vnd.github+json" } },
+      { headers: ghHeaders },
     );
 
     if (!reposResponse.ok) {
@@ -59,7 +69,7 @@ if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
     for (let page = 1; page <= 10; page++) {
       const searchRes = await fetch(
         `https://api.github.com/search/commits?q=author:${username}+-user:${username}&sort=committer-date&order=asc&per_page=100&page=${page}`,
-        { headers: { Accept: "application/vnd.github+json" } },
+        { headers: ghHeaders },
       );
       if (!searchRes.ok) {
         if (page === 1)
@@ -82,7 +92,7 @@ if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
     // Throw on failure (e.g. rate limit) so we never cache a partial result
     const fetchLanguages = async (url: string) => {
       const res = await fetch(url, {
-        headers: { Accept: "application/vnd.github+json" },
+        headers: ghHeaders,
       });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       return (await res.json()) as Record<string, number>;
@@ -92,7 +102,7 @@ if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
     const fetchTotalCommits = async (fullName: string) => {
       const res = await fetch(
         `https://api.github.com/repos/${fullName}/commits?per_page=1`,
-        { headers: { Accept: "application/vnd.github+json" } },
+        { headers: ghHeaders },
       );
       if (!res.ok) return null;
       const last = res.headers.get("link")?.match(/&page=(\d+)>; rel="last"/);
@@ -112,31 +122,34 @@ if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
     };
     const skipFile = /(^|\/)(package-lock\.json|bun\.lockb?|Cargo\.lock|yarn\.lock|pnpm-lock\.yaml|flake\.lock)$/;
 
-    // Sample our commits (evenly spaced over time) and tally lines added per
-    // language, giving our historical language mix in that repo
+    // Tally lines added per language across all our commits in a repo, giving
+    // our historical language mix there. Commit search already caps discovery
+    // at 1000 SHAs, so fetching every one costs at most ~1050 requests/hour of
+    // the 5000/hour limit. Batched to stay under GitHub's secondary limits
+    // (max ~100 concurrent requests).
     const sampleLanguageMix = async (fullName: string, shas: string[]) => {
-      const SAMPLES = 15;
-      const step = Math.max(1, Math.floor(shas.length / SAMPLES));
-      const sampled = shas.filter((_, i) => i % step === 0).slice(0, SAMPLES);
+      const BATCH_SIZE = 50;
       const mix: Record<string, number> = {};
-      await Promise.all(
-        sampled.map(async (sha) => {
-          const res = await fetch(
-            `https://api.github.com/repos/${fullName}/commits/${sha}`,
-            { headers: { Accept: "application/vnd.github+json" } },
-          );
-          if (!res.ok) return;
-          const { files } = (await res.json()) as {
-            files?: { filename: string; additions: number }[];
-          };
-          for (const file of files ?? []) {
-            if (skipFile.test(file.filename)) continue;
-            const ext = file.filename.split(".").pop()?.toLowerCase() ?? "";
-            const lang = extToLang[ext];
-            if (lang) mix[lang] = (mix[lang] ?? 0) + file.additions;
-          }
-        }),
-      );
+      for (let i = 0; i < shas.length; i += BATCH_SIZE) {
+        await Promise.all(
+          shas.slice(i, i + BATCH_SIZE).map(async (sha) => {
+            const res = await fetch(
+              `https://api.github.com/repos/${fullName}/commits/${sha}`,
+              { headers: ghHeaders },
+            );
+            if (!res.ok) return;
+            const { files } = (await res.json()) as {
+              files?: { filename: string; additions: number }[];
+            };
+            for (const file of files ?? []) {
+              if (skipFile.test(file.filename)) continue;
+              const ext = file.filename.split(".").pop()?.toLowerCase() ?? "";
+              const lang = extToLang[ext];
+              if (lang) mix[lang] = (mix[lang] ?? 0) + file.additions;
+            }
+          }),
+        );
+      }
       return mix;
     };
 
@@ -192,7 +205,7 @@ if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
 
     globalCache.__topLangsCache = { data: sortedLangs, fetchedAt: Date.now() };
   } catch (e) {
-    // Serve stale data rather than an error if a refresh fails (e.g. rate limit)
+    // Serve stale data rather than an error if a refresh fails
     if (cached) {
       sortedLangs = cached.data;
     } else {

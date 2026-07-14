@@ -8,9 +8,17 @@ import Branch from "../assets/branch.svg";
 
 const username = "yanpla";
 const userId = "287291530685841409";
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
-// Cache GitHub stats to stay within the anonymous API rate limit
+// A permissionless fine-grained PAT, required: it lifts the API rate limit
+const GITHUB_TOKEN =
+  import.meta.env.GITHUB_TOKEN ?? process.env.GITHUB_TOKEN;
+const ghHeaders = {
+  Accept: "application/vnd.github+json",
+  "User-Agent": username,
+  Authorization: `Bearer ${GITHUB_TOKEN}`,
+};
+
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 const globalCache = globalThis as typeof globalThis & {
   __githubStatsCache?: {
     repoCount: number;
@@ -21,25 +29,28 @@ const globalCache = globalThis as typeof globalThis & {
 
 let stats = globalCache.__githubStatsCache;
 if (!stats || Date.now() - stats.fetchedAt >= CACHE_TTL) {
-  const headers = { Accept: "application/vnd.github+json" };
   const [githubUserResponse, commitResponse] = await Promise.all([
-    fetch(`https://api.github.com/users/${username}`, { headers }),
+    fetch(`https://api.github.com/users/${username}`, { headers: ghHeaders }),
     fetch(`https://api.github.com/search/commits?q=author:${username}`, {
-      headers,
+      headers: ghHeaders,
     }),
   ]);
 
   const githubUserData = await githubUserResponse.json();
   const commitData = await commitResponse.json();
 
-  stats = {
+  const fresh = {
     repoCount: githubUserData.public_repos || 0,
     totalCommits: commitData.total_count || 0,
     fetchedAt: Date.now(),
   };
-  // Only cache successful lookups so a rate-limited response doesn't stick
+  // Only cache (and prefer) successful lookups so a rate-limited response
+  // doesn't stick or clobber older good data
   if (githubUserResponse.ok) {
-    globalCache.__githubStatsCache = stats;
+    globalCache.__githubStatsCache = fresh;
+    stats = fresh;
+  } else {
+    stats = stats ?? fresh;
   }
 }
 
