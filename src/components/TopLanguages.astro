@@ -52,32 +52,78 @@ if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
       (repo) => !repo.fork && !excludeList.includes(repo.name),
     );
 
-    const languageResults = await Promise.all(
-      repos.map(async (repo) => {
-        const res = await fetch(repo.languages_url, {
-          headers: { Accept: "application/vnd.github+json" },
-        });
-        if (!res.ok) return {};
-        return (await res.json()) as Record<string, number>;
-      }),
-    );
+    // Discover external repos (other users/orgs) via the public commit search,
+    // counting how many commits are ours in each
+    const externalCommits: Record<string, number> = {};
+    for (let page = 1; page <= 10; page++) {
+      const searchRes = await fetch(
+        `https://api.github.com/search/commits?q=author:${username}+-user:${username}&per_page=100&page=${page}`,
+        { headers: { Accept: "application/vnd.github+json" } },
+      );
+      if (!searchRes.ok) break;
+      const { items } = (await searchRes.json()) as {
+        items: { repository: { full_name: string; fork: boolean } }[];
+      };
+      for (const item of items) {
+        if (item.repository.fork) continue;
+        const name = item.repository.full_name;
+        externalCommits[name] = (externalCommits[name] ?? 0) + 1;
+      }
+      if (items.length < 100) break;
+    }
 
-    const langMap = languageResults.reduce<Record<string, Language>>(
-      (acc, langs) => {
-        for (const [name, size] of Object.entries(langs)) {
-          if (!acc[name]) {
-            acc[name] = {
-              name,
-              color: colors[name]?.color ?? "#8b8b8b",
-              size: 0,
-            };
-          }
-          acc[name].size += size;
+    const fetchLanguages = async (url: string) => {
+      const res = await fetch(url, {
+        headers: { Accept: "application/vnd.github+json" },
+      });
+      if (!res.ok) return {};
+      return (await res.json()) as Record<string, number>;
+    };
+
+    // Total commit count of a repo, read from the Link header's last page
+    const fetchTotalCommits = async (fullName: string) => {
+      const res = await fetch(
+        `https://api.github.com/repos/${fullName}/commits?per_page=1`,
+        { headers: { Accept: "application/vnd.github+json" } },
+      );
+      if (!res.ok) return null;
+      const last = res.headers.get("link")?.match(/&page=(\d+)>; rel="last"/);
+      return last ? parseInt(last[1], 10) : 1;
+    };
+
+    const [ownedLangs, externalLangs] = await Promise.all([
+      Promise.all(repos.map((repo) => fetchLanguages(repo.languages_url))),
+      Promise.all(
+        Object.entries(externalCommits).map(async ([fullName, mine]) => {
+          const [langs, total] = await Promise.all([
+            fetchLanguages(`https://api.github.com/repos/${fullName}/languages`),
+            fetchTotalCommits(fullName),
+          ]);
+          // Scale the repo's bytes by our share of its commits so one small
+          // contribution to a huge repo doesn't swamp the chart
+          const share = total ? Math.min(1, mine / total) : 0;
+          return Object.fromEntries(
+            Object.entries(langs).map(([name, size]) => [name, size * share]),
+          );
+        }),
+      ),
+    ]);
+
+    const langMap = [...ownedLangs, ...externalLangs].reduce<
+      Record<string, Language>
+    >((acc, langs) => {
+      for (const [name, size] of Object.entries(langs)) {
+        if (!acc[name]) {
+          acc[name] = {
+            name,
+            color: colors[name]?.color ?? "#8b8b8b",
+            size: 0,
+          };
         }
-        return acc;
-      },
-      {},
-    );
+        acc[name].size += size;
+      }
+      return acc;
+    }, {});
 
     sortedLangs = Object.values(langMap)
       .sort((a, b) => b.size - a.size)
