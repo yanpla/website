@@ -6,27 +6,49 @@ import DiscordIcon from "../assets/discord.svg";
 import GithubIcon from "../assets/github.svg";
 import Branch from "../assets/branch.svg";
 
-const GITHUB_TOKEN = import.meta.env.GITHUB_TOKEN;
 const username = "yanpla";
 const userId = "287291530685841409";
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
-const headers = { Authorization: `token ${GITHUB_TOKEN}` };
+// Cache GitHub stats to stay within the anonymous API rate limit
+const globalCache = globalThis as typeof globalThis & {
+  __githubStatsCache?: {
+    repoCount: number;
+    totalCommits: number;
+    fetchedAt: number;
+  };
+};
 
-const [githubUserResponse, commitResponse, discordUserResponse] =
-  await Promise.all([
+let stats = globalCache.__githubStatsCache;
+if (!stats || Date.now() - stats.fetchedAt >= CACHE_TTL) {
+  const headers = { Accept: "application/vnd.github+json" };
+  const [githubUserResponse, commitResponse] = await Promise.all([
     fetch(`https://api.github.com/users/${username}`, { headers }),
     fetch(`https://api.github.com/search/commits?q=author:${username}`, {
-      headers: { ...headers, Accept: "application/vnd.github.cloak-preview" },
+      headers,
     }),
-    fetch(`https://api.lanyard.rest/v1/users/${userId}`),
   ]);
 
-const githubUserData = await githubUserResponse.json();
-const commitData = await commitResponse.json();
+  const githubUserData = await githubUserResponse.json();
+  const commitData = await commitResponse.json();
+
+  stats = {
+    repoCount: githubUserData.public_repos || 0,
+    totalCommits: commitData.total_count || 0,
+    fetchedAt: Date.now(),
+  };
+  // Only cache successful lookups so a rate-limited response doesn't stick
+  if (githubUserResponse.ok) {
+    globalCache.__githubStatsCache = stats;
+  }
+}
+
+const discordUserResponse = await fetch(
+  `https://api.lanyard.rest/v1/users/${userId}`,
+);
 const discordUserData = await discordUserResponse.json();
 
-const repoCount = githubUserData.public_repos || 0;
-const totalCommits = commitData.total_count || 0;
+const { repoCount, totalCommits } = stats;
 const commitDisplay =
   totalCommits >= 1000 ? `${(totalCommits / 1000).toFixed(1)}k+` : `${totalCommits}`;
 
