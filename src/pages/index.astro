@@ -7,6 +7,8 @@ import SocialsFallback from "../components/SocialsFallback.astro";
 import TopLanguagesFallback from "../components/TopLanguagesFallback.astro";
 import LeagueStats from "../components/LeagueStats.astro";
 import LeagueStatsFallback from "../components/LeagueStatsFallback.astro";
+import SteamStats from "../components/SteamStats.astro";
+import SteamStatsFallback from "../components/SteamStatsFallback.astro";
 ---
 
 <Layout>
@@ -28,7 +30,10 @@ import LeagueStatsFallback from "../components/LeagueStatsFallback.astro";
         </TopLanguages>
       </div>
       {/* Easter egg: hidden until the visitor clicks the hero avatar (click again to hide) */}
-      <div class="w-full hidden" id="league-stats">
+      <div class="w-full hidden space-y-8" id="games-stats">
+        <SteamStats server:defer>
+            <SteamStatsFallback slot="fallback" />
+        </SteamStats>
         <LeagueStats server:defer>
           <LeagueStatsFallback slot="fallback" />
         </LeagueStats>
@@ -37,15 +42,15 @@ import LeagueStatsFallback from "../components/LeagueStatsFallback.astro";
   </main>
 
   <script>
-    const league = document.getElementById("league-stats");
+    const games = document.getElementById("games-stats");
     const setVisible = (visible: boolean) => {
-      league?.classList.toggle("hidden", !visible);
+      games?.classList.toggle("hidden", !visible);
       localStorage.setItem("gg", visible ? "1" : "");
     };
     if (localStorage.getItem("gg")) setVisible(true);
 
     document.getElementById("hero-pfp")?.addEventListener("click", () => {
-      setVisible(league?.classList.contains("hidden") ?? false);
+      setVisible(games?.classList.contains("hidden") ?? false);
     });
   </script>
 </Layout>
