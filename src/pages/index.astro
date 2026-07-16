@@ -33,12 +33,12 @@ import MinecraftStatsFallback from "../components/MinecraftStatsFallback.astro";
       </div>
       {/* Easter egg: hidden until the visitor clicks the hero avatar (click again to hide) */}
       <div class="w-full hidden space-y-8" id="games-stats">
+        <LeagueStats server:defer>
+            <LeagueStatsFallback slot="fallback" />
+        </LeagueStats>
         <SteamStats server:defer>
             <SteamStatsFallback slot="fallback" />
         </SteamStats>
-        <LeagueStats server:defer>
-          <LeagueStatsFallback slot="fallback" />
-        </LeagueStats>
         <MinecraftStats server:defer>
           <MinecraftStatsFallback slot="fallback" />
         </MinecraftStats>
