@@ -1,0 +1,13 @@
+---
+/** A small glowing status indicator dot. */
+interface Props {
+  color: string;
+}
+
+const { color } = Astro.props;
+---
+
+<div
+  class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+  style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
+/>

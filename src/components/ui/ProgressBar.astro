@@ -1,0 +1,44 @@
+---
+/**
+ * A horizontal bar on a muted track. A single segment renders as a plain
+ * progress bar; multiple segments tile into a distribution chart.
+ */
+interface Segment {
+  percent: number;
+  color: string;
+  title?: string;
+}
+
+interface Props {
+  segments: Segment[];
+  title?: string;
+  /** Play the scale-in fill animation on entrance. */
+  animated?: boolean;
+}
+
+const { segments, title, animated = false } = Astro.props;
+const single = segments.length === 1;
+---
+
+<div
+  class="flex w-full h-2.5 overflow-hidden rounded-full bg-muted"
+  title={title}
+>
+  <div class:list={["flex w-full h-full", { "animate-bar-fill": animated }]}>
+    {
+      segments.map((segment) => (
+        <div
+          class:list={[
+            "h-full transition-opacity duration-200 hover:opacity-75",
+            { "rounded-full": single },
+          ]}
+          style={{
+            width: `${segment.percent}%`,
+            backgroundColor: segment.color,
+          }}
+          title={segment.title}
+        />
+      ))
+    }
+  </div>
+</div>

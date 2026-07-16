@@ -1,0 +1,30 @@
+---
+/**
+ * A titled page section: bold lowercase heading with a right-aligned
+ * monospace meta line, followed by the section body.
+ */
+interface Props {
+  title: string;
+  meta?: string;
+  /** Extra classes for the header row (e.g. entrance animation). */
+  headerClass?: string;
+}
+
+const { title, meta, headerClass } = Astro.props;
+---
+
+<section>
+  <div class="flex flex-col space-y-5">
+    <div class:list={["flex justify-between items-baseline", headerClass]}>
+      <h2 class="text-2xl font-bold tracking-tight">{title}</h2>
+      {
+        meta && (
+          <span class="text-xs text-muted-foreground font-mono tracking-wide">
+            {meta}
+          </span>
+        )
+      }
+    </div>
+    <slot />
+  </div>
+</section>

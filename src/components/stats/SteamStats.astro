@@ -1,0 +1,58 @@
+---
+import IconRow from "@/components/ui/IconRow.astro";
+import Notice from "@/components/ui/Notice.astro";
+import Section from "@/components/ui/Section.astro";
+import StatBlock from "./StatBlock.astro";
+import { STEAM } from "@/consts";
+import { getSteamStats } from "@/lib/steam";
+
+const { data: stats, error } = await getSteamStats();
+
+// Steam persona states: 0 offline, 1 online, 2 busy, 3 away, 4 snooze,
+// 5 looking to trade, 6 looking to play
+const stateNames = ["offline", "online", "busy", "away", "snooze", "trading", "playing"];
+const stateColors = ["#80848e", "#57cbde", "#f23f43", "#f0b232", "#f0b232", "#57cbde", "#a3e26a"];
+const personaState = stats?.personaState ?? 0;
+const stateName = stateNames[personaState] ?? "offline";
+const stateColor = stateColors[personaState] ?? stateColors[0];
+
+const totalHours = stats ? Math.round(stats.totalMinutes / 60) : 0;
+const recentHours = stats ? Math.round(stats.recentMinutes / 60) : 0;
+const formatHours = (hours: number) =>
+  hours >= 1000 ? `${(hours / 1000).toFixed(1)}k` : `${hours}`;
+---
+
+<Section
+  title="steam"
+  meta={`${stats?.personaName ?? STEAM.vanityName} · ${stats?.gameCount ?? "?"} games`}
+>
+  {
+    error ? (
+      <Notice>failed to load: {error}</Notice>
+    ) : !stats ? (
+      <Notice>no stats found</Notice>
+    ) : (
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Profile summary */}
+        <StatBlock color={stateColor} label={stateName} delay={0.1}>
+          <div class="flex justify-between text-xs text-muted-foreground tabular-nums">
+            <span>{formatHours(totalHours)} hours played</span>
+            <span>{recentHours}h past 2 weeks</span>
+          </div>
+        </StatBlock>
+
+        {/* Most-played games */}
+        <div class="flex flex-col space-y-3">
+          {stats.topGames.map((game, i) => (
+            <IconRow
+              icon={game.icon}
+              name={game.name}
+              detail={`${formatHours(game.hours)} hrs`}
+              delay={0.15 + i * 0.05}
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
+</Section>

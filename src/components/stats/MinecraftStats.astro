@@ -1,0 +1,46 @@
+---
+import Notice from "@/components/ui/Notice.astro";
+import Section from "@/components/ui/Section.astro";
+import { MINECRAFT } from "@/consts";
+import { getMinecraftProfile } from "@/lib/minecraft";
+
+const { data: profile, error } = await getMinecraftProfile();
+
+const formatUuid = (uuid: string) =>
+  uuid.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5");
+---
+
+<Section
+  title="minecraft"
+  meta={`${profile?.name ?? MINECRAFT.username} · java edition`}
+>
+  {
+    error ? (
+      <Notice>failed to load: {error}</Notice>
+    ) : !profile ? (
+      <Notice>no profile found</Notice>
+    ) : (
+      <div
+        class="flex items-center gap-6 animate-entrance"
+        style="animation-delay: 0.1s;"
+      >
+        {/* Skin render from mc-heads.net, keyed by UUID */}
+        <img
+          src={`https://mc-heads.net/body/${profile.uuid}/128`}
+          alt={`${profile.name}'s Minecraft skin`}
+          class="h-32 w-auto flex-shrink-0 [image-rendering:pixelated]"
+          loading="lazy"
+        />
+
+        <div class="flex flex-col space-y-2.5 min-w-0">
+          <div class="flex items-center space-x-2">
+            <span class="text-sm font-medium">{profile.name}</span>
+          </div>
+          <span class="text-xs text-muted-foreground font-mono tracking-wide truncate">
+            {formatUuid(profile.uuid)}
+          </span>
+        </div>
+      </div>
+    )
+  }
+</Section>

@@ -1,5 +1,13 @@
 ---
-import "../styles/global.css";
+import "@/styles/global.css";
+import { SITE } from "@/consts";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = SITE.title, description = SITE.description } = Astro.props;
 ---
 
 <!doctype html>
@@ -9,17 +17,18 @@ import "../styles/global.css";
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
-    <title>yanpla</title>
-    <meta name="description" content="yanpla's personal corner of the internet. Developer, gamer, maker of things." />
+    <title>{title}</title>
+    <meta name="description" content={description} />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="yanpla" />
-    <meta property="og:description" content="yanpla's personal corner of the internet. Developer, gamer, maker of things." />
-    <meta property="og:site_name" content="yanpla" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content={SITE.title} />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="yanpla" />
-    <meta name="twitter:description" content="yanpla's personal corner of the internet. Developer, gamer, maker of things." />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
     <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)" />
+    {/* Apply the stored theme before first paint to avoid a flash */}
     <script is:inline>
       (function() {
         var d = document.documentElement;

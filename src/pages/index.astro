@@ -1,16 +1,11 @@
 ---
-import Hero from "../components/Hero.astro";
-import Layout from "../layouts/Layout.astro";
-import Socials from "../components/Socials.astro";
-import TopLanguages from "../components/TopLanguages.astro";
-import SocialsFallback from "../components/SocialsFallback.astro";
-import TopLanguagesFallback from "../components/TopLanguagesFallback.astro";
-import LeagueStats from "../components/LeagueStats.astro";
-import LeagueStatsFallback from "../components/LeagueStatsFallback.astro";
-import SteamStats from "../components/SteamStats.astro";
-import SteamStatsFallback from "../components/SteamStatsFallback.astro";
-import MinecraftStats from "../components/MinecraftStats.astro";
-import MinecraftStatsFallback from "../components/MinecraftStatsFallback.astro";
+import Layout from "@/layouts/Layout.astro";
+import Hero from "@/components/Hero.astro";
+import Socials from "@/components/Socials.astro";
+import SocialsFallback from "@/components/SocialsFallback.astro";
+import TopLanguages from "@/components/stats/TopLanguages.astro";
+import TopLanguagesFallback from "@/components/stats/TopLanguagesFallback.astro";
+import GamesSection from "@/components/GamesSection.astro";
 ---
 
 <Layout>
@@ -31,69 +26,7 @@ import MinecraftStatsFallback from "../components/MinecraftStatsFallback.astro";
           <TopLanguagesFallback slot="fallback" />
         </TopLanguages>
       </div>
-      {/* Easter egg: hidden until the visitor clicks the hero avatar (click again to hide) */}
-      <div class="w-full hidden space-y-8" id="games-stats">
-        <LeagueStats server:defer>
-            <LeagueStatsFallback slot="fallback" />
-        </LeagueStats>
-        <SteamStats server:defer>
-            <SteamStatsFallback slot="fallback" />
-        </SteamStats>
-        <MinecraftStats server:defer>
-          <MinecraftStatsFallback slot="fallback" />
-        </MinecraftStats>
-      </div>
+      <GamesSection />
     </div>
   </main>
-
-  <script>
-    const games = document.getElementById("games-stats");
-    const setVisible = (visible: boolean) => {
-      games?.classList.toggle("hidden", !visible);
-      localStorage.setItem("gg", visible ? "1" : "");
-    };
-    if (localStorage.getItem("gg")) setVisible(true);
-
-    const pfp = document.getElementById("hero-pfp") as HTMLImageElement | null;
-    pfp?.addEventListener("click", () => {
-      setVisible(games?.classList.contains("hidden") ?? false);
-    });
-
-    // Easter egg: Konami code sends the avatar into a Mario Kart spin
-    const konami = [
-      "arrowup", "arrowup", "arrowdown", "arrowdown",
-      "arrowleft", "arrowright", "arrowleft", "arrowright", "b", "a",
-    ];
-    let konamiIndex = 0;
-    window.addEventListener("keydown", (e) => {
-      konamiIndex = e.key.toLowerCase() === konami[konamiIndex] ? konamiIndex + 1 : 0;
-      if (konamiIndex === konami.length) {
-        konamiIndex = 0;
-        pfp?.classList.remove("animate-kart-spin");
-        // Force a reflow so the animation restarts on repeat triggers
-        void pfp?.offsetWidth;
-        pfp?.classList.add("animate-kart-spin");
-      }
-    });
-    pfp?.addEventListener("animationend", () =>
-      pfp.classList.remove("animate-kart-spin"),
-    );
-
-    // Easter egg: 10 rapid avatar clicks swap it for the Minecraft skin head
-    const originalSrc = pfp?.src ?? "";
-    const minecraftSrc =
-      "https://mc-heads.net/avatar/e1e7252a80d84ee4a5d474f7fc6378bb/256";
-    let clickStreak = 0;
-    let lastClick = 0;
-    pfp?.addEventListener("click", () => {
-      const now = performance.now();
-      clickStreak = now - lastClick < 1500 ? clickStreak + 1 : 1;
-      lastClick = now;
-      if (clickStreak >= 10) {
-        clickStreak = 0;
-        pfp.src = pfp.src === originalSrc ? minecraftSrc : originalSrc;
-        pfp.srcset = "";
-      }
-    });
-  </script>
 </Layout>
