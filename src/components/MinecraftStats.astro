@@ -1,0 +1,114 @@
+---
+export const prerender = false;
+
+interface MinecraftProfile {
+  uuid: string;
+  name: string;
+  slimModel: boolean;
+  hasCape: boolean;
+}
+
+const username = "yanpla";
+
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours; profiles rarely change
+const globalCache = globalThis as typeof globalThis & {
+  __minecraftCache?: { data: MinecraftProfile; fetchedAt: number };
+};
+
+// Mojang's public API needs no key
+const fetchProfile = async (): Promise<MinecraftProfile> => {
+  const res = await fetch(
+    `https://api.mojang.com/users/profiles/minecraft/${username}`,
+  );
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  const { id, name } = (await res.json()) as { id: string; name: string };
+
+  const sessionRes = await fetch(
+    `https://sessionserver.mojang.com/session/minecraft/profile/${id}`,
+  );
+  if (!sessionRes.ok)
+    throw new Error(`HTTP error! status: ${sessionRes.status}`);
+  const session = (await sessionRes.json()) as {
+    properties: { name: string; value: string }[];
+  };
+
+  // The base64 "textures" property holds skin model and cape info
+  const texturesProp = session.properties.find((p) => p.name === "textures");
+  const textures = texturesProp
+    ? (JSON.parse(Buffer.from(texturesProp.value, "base64").toString()) as {
+        textures: {
+          SKIN?: { metadata?: { model?: string } };
+          CAPE?: { url: string };
+        };
+      }).textures
+    : {};
+
+  return {
+    uuid: id,
+    name,
+    slimModel: textures.SKIN?.metadata?.model === "slim",
+    hasCape: Boolean(textures.CAPE),
+  };
+};
+
+let profile: MinecraftProfile | null = null;
+let error: string | null = null;
+
+const cached = globalCache.__minecraftCache;
+if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
+  profile = cached.data;
+} else {
+  try {
+    profile = await fetchProfile();
+    globalCache.__minecraftCache = { data: profile, fetchedAt: Date.now() };
+  } catch (e) {
+    // Serve stale data rather than an error if a refresh fails
+    if (cached) {
+      profile = cached.data;
+    } else {
+      error = e instanceof Error ? e.message : "Failed to fetch profile";
+    }
+  }
+}
+
+const formatUuid = (uuid: string) =>
+  uuid.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5");
+---
+
+<section>
+  <div class="flex flex-col space-y-5">
+    <div class="flex justify-between items-baseline">
+      <h2 class="text-2xl font-bold tracking-tight">minecraft</h2>
+      <span class="text-xs text-muted-foreground font-mono tracking-wide">
+        {profile?.name ?? username} · java edition
+      </span>
+    </div>
+
+    {
+      error ? (
+        <div class="text-sm text-muted-foreground animate-entrance">failed to load: {error}</div>
+      ) : !profile ? (
+        <div class="text-sm text-muted-foreground animate-entrance">no profile found</div>
+      ) : (
+        <div class="flex items-center gap-6 animate-entrance" style="animation-delay: 0.1s;">
+          {/* Skin render from mc-heads.net, keyed by UUID */}
+          <img
+            src={`https://mc-heads.net/body/${profile.uuid}/128`}
+            alt={`${profile.name}'s Minecraft skin`}
+            class="h-32 w-auto flex-shrink-0 [image-rendering:pixelated]"
+            loading="lazy"
+          />
+
+          <div class="flex flex-col space-y-2.5 min-w-0">
+            <div class="flex items-center space-x-2">
+              <span class="text-sm font-medium">{profile.name}</span>
+            </div>
+            <span class="text-xs text-muted-foreground font-mono tracking-wide truncate">
+              {formatUuid(profile.uuid)}
+            </span>
+          </div>
+        </div>
+      )
+    }
+  </div>
+</section>

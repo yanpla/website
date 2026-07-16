@@ -9,6 +9,8 @@ import LeagueStats from "../components/LeagueStats.astro";
 import LeagueStatsFallback from "../components/LeagueStatsFallback.astro";
 import SteamStats from "../components/SteamStats.astro";
 import SteamStatsFallback from "../components/SteamStatsFallback.astro";
+import MinecraftStats from "../components/MinecraftStats.astro";
+import MinecraftStatsFallback from "../components/MinecraftStatsFallback.astro";
 ---
 
 <Layout>
@@ -37,6 +39,9 @@ import SteamStatsFallback from "../components/SteamStatsFallback.astro";
         <LeagueStats server:defer>
           <LeagueStatsFallback slot="fallback" />
         </LeagueStats>
+        <MinecraftStats server:defer>
+          <MinecraftStatsFallback slot="fallback" />
+        </MinecraftStats>
       </div>
     </div>
   </main>
