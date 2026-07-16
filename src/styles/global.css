@@ -108,6 +108,22 @@ body {
   animation: bar-fill 0.7s var(--ease-spring) 0.05s forwards;
 }
 
+@keyframes kart-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(360deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(720deg) scale(1);
+  }
+}
+
+.animate-kart-spin {
+  animation: kart-spin 1.2s;
+}
+
 .theme-icon-enter {
   animation: icon-in 0.35s var(--ease-spring) forwards;
 }

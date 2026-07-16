@@ -54,8 +54,46 @@ import MinecraftStatsFallback from "../components/MinecraftStatsFallback.astro";
     };
     if (localStorage.getItem("gg")) setVisible(true);
 
-    document.getElementById("hero-pfp")?.addEventListener("click", () => {
+    const pfp = document.getElementById("hero-pfp") as HTMLImageElement | null;
+    pfp?.addEventListener("click", () => {
       setVisible(games?.classList.contains("hidden") ?? false);
+    });
+
+    // Easter egg: Konami code sends the avatar into a Mario Kart spin
+    const konami = [
+      "arrowup", "arrowup", "arrowdown", "arrowdown",
+      "arrowleft", "arrowright", "arrowleft", "arrowright", "b", "a",
+    ];
+    let konamiIndex = 0;
+    window.addEventListener("keydown", (e) => {
+      konamiIndex = e.key.toLowerCase() === konami[konamiIndex] ? konamiIndex + 1 : 0;
+      if (konamiIndex === konami.length) {
+        konamiIndex = 0;
+        pfp?.classList.remove("animate-kart-spin");
+        // Force a reflow so the animation restarts on repeat triggers
+        void pfp?.offsetWidth;
+        pfp?.classList.add("animate-kart-spin");
+      }
+    });
+    pfp?.addEventListener("animationend", () =>
+      pfp.classList.remove("animate-kart-spin"),
+    );
+
+    // Easter egg: 10 rapid avatar clicks swap it for the Minecraft skin head
+    const originalSrc = pfp?.src ?? "";
+    const minecraftSrc =
+      "https://mc-heads.net/avatar/e1e7252a80d84ee4a5d474f7fc6378bb/256";
+    let clickStreak = 0;
+    let lastClick = 0;
+    pfp?.addEventListener("click", () => {
+      const now = performance.now();
+      clickStreak = now - lastClick < 1500 ? clickStreak + 1 : 1;
+      lastClick = now;
+      if (clickStreak >= 10) {
+        clickStreak = 0;
+        pfp.src = pfp.src === originalSrc ? minecraftSrc : originalSrc;
+        pfp.srcset = "";
+      }
     });
   </script>
 </Layout>
