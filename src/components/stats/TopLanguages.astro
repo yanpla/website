@@ -1,0 +1,52 @@
+---
+import Notice from "@/components/ui/Notice.astro";
+import ProgressBar from "@/components/ui/ProgressBar.astro";
+import Section from "@/components/ui/Section.astro";
+import { getTopLanguages } from "@/lib/github";
+
+const { data, error } = await getTopLanguages();
+
+const langs = data ?? [];
+const totalSize = langs.reduce((acc, lang) => acc + lang.size, 0);
+const percent = (size: number) => Math.round((size / totalSize) * 100);
+---
+
+<Section title="top languages" meta="based on github bytes">
+  {
+    error ? (
+      <Notice>failed to load: {error}</Notice>
+    ) : langs.length === 0 ? (
+      <Notice>no languages found</Notice>
+    ) : (
+      <>
+        <ProgressBar
+          animated
+          segments={langs.map((lang) => ({
+            percent: (lang.size / totalSize) * 100,
+            color: lang.color,
+            title: `${lang.name} ${percent(lang.size)}%`,
+          }))}
+        />
+
+        {/* Legend */}
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-y-2.5 gap-x-4">
+          {langs.map((lang, i) => (
+            <div
+              class="flex items-center space-x-2 animate-entrance"
+              style={`animation-delay: ${0.1 + i * 0.05}s;`}
+            >
+              <div
+                class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: lang.color }}
+              />
+              <span class="text-sm font-medium truncate">{lang.name}</span>
+              <span class="text-xs text-muted-foreground tabular-nums">
+                {percent(lang.size)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </>
+    )
+  }
+</Section>

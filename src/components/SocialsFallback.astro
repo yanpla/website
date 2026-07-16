@@ -1,22 +1,23 @@
 ---
-import SocialCard from "./SocialCard.astro";
-import DiscordIcon from "../assets/discord.svg";
-import GithubIcon from "../assets/github.svg";
+import SocialCard from "@/components/ui/SocialCard.astro";
+import DiscordIcon from "@/assets/discord.svg";
+import GithubIcon from "@/assets/github.svg";
+import { DISCORD, GITHUB } from "@/consts";
 ---
 
 <div class="flex flex-col md:flex-row-reverse md:justify-normal items-center gap-2">
   <SocialCard
-    href="https://discord.com/users/287291530685841409"
+    href={`https://discord.com/users/${DISCORD.userId}`}
     title="Discord"
-    subtitle="@yanpla"
+    subtitle={`@${DISCORD.username}`}
   >
     <DiscordIcon slot="icon" />
   </SocialCard>
 
   <SocialCard
-    href="https://github.com/yanpla"
+    href={`https://github.com/${GITHUB.username}`}
     title="GitHub"
-    subtitle="@yanpla"
+    subtitle={`@${GITHUB.username}`}
   >
     <GithubIcon slot="icon" />
   </SocialCard>

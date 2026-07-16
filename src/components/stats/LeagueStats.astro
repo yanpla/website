@@ -1,0 +1,125 @@
+---
+import IconRow from "@/components/ui/IconRow.astro";
+import Notice from "@/components/ui/Notice.astro";
+import ProgressBar from "@/components/ui/ProgressBar.astro";
+import Section from "@/components/ui/Section.astro";
+import StatBlock from "./StatBlock.astro";
+import { RIOT } from "@/consts";
+import { getLeagueStats } from "@/lib/league";
+
+const { data: stats, error } = await getLeagueStats();
+
+const tierColors: Record<string, string> = {
+  IRON: "#8e8583",
+  BRONZE: "#a9744f",
+  SILVER: "#a5b3c2",
+  GOLD: "#e8b64d",
+  PLATINUM: "#4fc4b0",
+  EMERALD: "#2ec46f",
+  DIAMOND: "#5e9fe6",
+  MASTER: "#b04ee6",
+  GRANDMASTER: "#e04848",
+  CHALLENGER: "#3fd0f0",
+};
+
+const solo = stats?.solo ?? null;
+const totalGames = solo ? solo.wins + solo.losses : 0;
+const winrate = solo && totalGames ? Math.round((solo.wins / totalGames) * 100) : 0;
+const tierColor = solo ? (tierColors[solo.tier] ?? "#8b8b8b") : "#8b8b8b";
+const tierDisplay = solo
+  ? `${solo.tier.charAt(0) + solo.tier.slice(1).toLowerCase()} ${solo.rank}`
+  : "Unranked";
+
+const arena = stats?.arena ?? null;
+const arenaColor = "#b04ee6";
+const top4Rate = arena ? Math.round((arena.top4 / arena.games) * 100) : 0;
+
+const formatPoints = (points: number) =>
+  points >= 1000 ? `${Math.round(points / 1000)}k` : `${points}`;
+---
+
+<Section
+  title="league of legends"
+  meta={`${RIOT.gameName}#${RIOT.tagLine} · lvl ${stats?.summonerLevel ?? "?"}`}
+>
+  {
+    error ? (
+      <Notice>failed to load: {error}</Notice>
+    ) : !stats ? (
+      <Notice>no stats found</Notice>
+    ) : (
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Ranked solo/duo */}
+        <StatBlock
+          color={tierColor}
+          label={tierDisplay}
+          sublabel={solo ? `${solo.leaguePoints} lp` : undefined}
+          meta="ranked solo/duo"
+          delay={0.1}
+        >
+          {solo && (
+            <>
+              <ProgressBar
+                title={`${winrate}% winrate`}
+                segments={[{ percent: winrate, color: tierColor }]}
+              />
+              <div class="flex justify-between text-xs text-muted-foreground tabular-nums">
+                <span>
+                  {solo.wins}w / {solo.losses}l
+                </span>
+                <span>{winrate}% winrate</span>
+              </div>
+            </>
+          )}
+        </StatBlock>
+
+        {/* Top champion masteries */}
+        <div class="flex flex-col space-y-3">
+          {stats.topChamps.map((champ, i) => (
+            <IconRow
+              icon={champ.icon}
+              name={champ.name}
+              detail={`mastery ${champ.level} · ${formatPoints(champ.points)} pts`}
+              delay={0.15 + i * 0.05}
+            />
+          ))}
+        </div>
+
+        {/* Arena, aggregated from recent matches */}
+        {arena && (
+          <>
+            <StatBlock
+              color={arenaColor}
+              label={`${arena.firsts}× 1st place`}
+              sublabel={`avg ${arena.avgPlacement.toFixed(1)}`}
+              meta={`arena · last ${arena.games} games`}
+              delay={0.3}
+            >
+              <ProgressBar
+                title={`${top4Rate}% top 4`}
+                segments={[{ percent: top4Rate, color: arenaColor }]}
+              />
+              <div class="flex justify-between text-xs text-muted-foreground tabular-nums">
+                <span>
+                  {arena.top4}w / {arena.games - arena.top4}l
+                </span>
+                <span>{top4Rate}% top 4</span>
+              </div>
+            </StatBlock>
+
+            <div class="flex flex-col space-y-3">
+              {arena.topChamps.map((champ, i) => (
+                <IconRow
+                  icon={champ.icon}
+                  name={champ.name}
+                  detail={`${champ.games} ${champ.games === 1 ? "game" : "games"}`}
+                  delay={0.35 + i * 0.05}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+</Section>

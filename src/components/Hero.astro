@@ -1,7 +1,8 @@
 ---
 import { Image } from "astro:assets";
-import pfp from "../assets/pfp.jpeg";
-import ThemeToggle from "./ThemeToggle.astro";
+import pfp from "@/assets/pfp.jpeg";
+import ThemeToggle from "@/components/ThemeToggle.astro";
+import { MINECRAFT, SITE } from "@/consts";
 ---
 
 <header
@@ -9,7 +10,7 @@ import ThemeToggle from "./ThemeToggle.astro";
 >
   <div class="relative inline-flex items-center">
     <h1 class="text-3xl md:text-4xl font-bold leading-none tracking-tight">
-      yanpla
+      {SITE.title}
     </h1>
     <div class="absolute left-full top-1/2 -translate-y-1/2 ml-3">
       <ThemeToggle />
@@ -19,11 +20,52 @@ import ThemeToggle from "./ThemeToggle.astro";
   <Image
     id="hero-pfp"
     src={pfp}
-    alt="yanpla's avatar"
+    alt={`${SITE.title}'s avatar`}
     width={256}
     height={256}
     loading="eager"
     fetchpriority="high"
+    data-minecraft-uuid={MINECRAFT.uuid}
     class="block w-24 h-24 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-3xl md:rounded-[3.5rem] [corner-shape:squircle] shadow-[--shadow-image] transition-transform duration-300 ease-[--ease-spring] hover:scale-[0.96] active:scale-[0.93] cursor-pointer select-none"
   />
 </header>
+
+<script>
+  const pfp = document.getElementById("hero-pfp") as HTMLImageElement | null;
+
+  // Easter egg: Konami code sends the avatar into a Mario Kart spin
+  const konami = [
+    "arrowup", "arrowup", "arrowdown", "arrowdown",
+    "arrowleft", "arrowright", "arrowleft", "arrowright", "b", "a",
+  ];
+  let konamiIndex = 0;
+  window.addEventListener("keydown", (e) => {
+    konamiIndex = e.key.toLowerCase() === konami[konamiIndex] ? konamiIndex + 1 : 0;
+    if (konamiIndex === konami.length) {
+      konamiIndex = 0;
+      pfp?.classList.remove("animate-kart-spin");
+      // Force a reflow so the animation restarts on repeat triggers
+      void pfp?.offsetWidth;
+      pfp?.classList.add("animate-kart-spin");
+    }
+  });
+  pfp?.addEventListener("animationend", () =>
+    pfp.classList.remove("animate-kart-spin"),
+  );
+
+  // Easter egg: 10 rapid avatar clicks swap it for the Minecraft skin head
+  const originalSrc = pfp?.src ?? "";
+  const minecraftSrc = `https://mc-heads.net/avatar/${pfp?.dataset.minecraftUuid}/256`;
+  let clickStreak = 0;
+  let lastClick = 0;
+  pfp?.addEventListener("click", () => {
+    const now = performance.now();
+    clickStreak = now - lastClick < 1500 ? clickStreak + 1 : 1;
+    lastClick = now;
+    if (clickStreak >= 10) {
+      clickStreak = 0;
+      pfp.src = pfp.src === originalSrc ? minecraftSrc : originalSrc;
+      pfp.srcset = "";
+    }
+  });
+</script>

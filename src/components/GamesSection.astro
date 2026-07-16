@@ -1,0 +1,38 @@
+---
+/**
+ * Easter egg: game stats hidden until the visitor clicks the hero avatar
+ * (click again to hide). Visibility persists in localStorage.
+ */
+import LeagueStats from "@/components/stats/LeagueStats.astro";
+import LeagueStatsFallback from "@/components/stats/LeagueStatsFallback.astro";
+import SteamStats from "@/components/stats/SteamStats.astro";
+import SteamStatsFallback from "@/components/stats/SteamStatsFallback.astro";
+import MinecraftStats from "@/components/stats/MinecraftStats.astro";
+import MinecraftStatsFallback from "@/components/stats/MinecraftStatsFallback.astro";
+---
+
+<div class="w-full hidden space-y-8" id="games-stats">
+  <LeagueStats server:defer>
+    <LeagueStatsFallback slot="fallback" />
+  </LeagueStats>
+  <SteamStats server:defer>
+    <SteamStatsFallback slot="fallback" />
+  </SteamStats>
+  <MinecraftStats server:defer>
+    <MinecraftStatsFallback slot="fallback" />
+  </MinecraftStats>
+</div>
+
+<script>
+  const games = document.getElementById("games-stats");
+  const setVisible = (visible: boolean) => {
+    games?.classList.toggle("hidden", !visible);
+    localStorage.setItem("gg", visible ? "1" : "");
+  };
+  if (localStorage.getItem("gg")) setVisible(true);
+
+  // The toggle lives on the hero avatar rendered by Hero.astro
+  document.getElementById("hero-pfp")?.addEventListener("click", () => {
+    setVisible(games?.classList.contains("hidden") ?? false);
+  });
+</script>

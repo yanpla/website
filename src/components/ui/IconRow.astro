@@ -1,0 +1,35 @@
+---
+/**
+ * A list row with an optional round icon, a name, and a right-aligned
+ * numeric detail. Used for champions, games, and similar stat lists.
+ */
+interface Props {
+  name: string;
+  detail: string;
+  icon?: string;
+  /** Entrance animation delay in seconds. */
+  delay?: number;
+}
+
+const { name, detail, icon, delay = 0 } = Astro.props;
+---
+
+<div
+  class="flex items-center space-x-3 animate-entrance"
+  style={`animation-delay: ${delay}s;`}
+>
+  {
+    icon && (
+      <img
+        src={icon}
+        alt={name}
+        class="w-6 h-6 rounded-full flex-shrink-0"
+        loading="lazy"
+      />
+    )
+  }
+  <span class="text-sm font-medium truncate">{name}</span>
+  <span class="text-xs text-muted-foreground tabular-nums ml-auto">
+    {detail}
+  </span>
+</div>
