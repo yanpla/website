@@ -25,22 +25,13 @@ const ghHeaders = {
   Authorization: `Bearer ${GITHUB_TOKEN}`,
 };
 
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const globalCache = globalThis as typeof globalThis & {
   __topLangsCache?: { data: Language[]; fetchedAt: number };
+  __topLangsRefresh?: Promise<Language[]>;
 };
 
-let sortedLangs: Language[] = [];
-let totalSize = 0;
-let error: string | null = null;
-
-const cached = globalCache.__topLangsCache;
-if (!GITHUB_TOKEN) {
-  error = "GitHub token not configured";
-} else if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
-  sortedLangs = cached.data;
-} else {
-  try {
+const fetchTopLanguages = async (): Promise<Language[]> => {
     // Colors come from GitHub's public linguist data
     const colorsResponse = await fetch(
       "https://raw.githubusercontent.com/IonicaBizau/github-colors/refs/heads/master/lib/colors.json",
@@ -199,18 +190,41 @@ if (!GITHUB_TOKEN) {
       return acc;
     }, {});
 
-    sortedLangs = Object.values(langMap)
+    const result = Object.values(langMap)
       .sort((a, b) => b.size - a.size)
-      .slice(0, 6);
+      .slice(0, 9);
 
-    globalCache.__topLangsCache = { data: sortedLangs, fetchedAt: Date.now() };
+    globalCache.__topLangsCache = { data: result, fetchedAt: Date.now() };
+    return result;
+};
+
+// Deduplicate concurrent refreshes so parallel requests share one fetch
+const refreshTopLanguages = () =>
+  (globalCache.__topLangsRefresh ??= fetchTopLanguages().finally(() => {
+    globalCache.__topLangsRefresh = undefined;
+  }));
+
+let sortedLangs: Language[] = [];
+let totalSize = 0;
+let error: string | null = null;
+
+const cached = globalCache.__topLangsCache;
+if (!GITHUB_TOKEN) {
+  error = "GitHub token not configured";
+} else if (cached) {
+  // Stale-while-revalidate: always serve the cached bar immediately, and
+  // kick off a background refresh if it has expired
+  sortedLangs = cached.data;
+  if (Date.now() - cached.fetchedAt >= CACHE_TTL) {
+    refreshTopLanguages().catch(() => {
+      // Keep serving stale data if the background refresh fails
+    });
+  }
+} else {
+  try {
+    sortedLangs = await refreshTopLanguages();
   } catch (e) {
-    // Serve stale data rather than an error if a refresh fails
-    if (cached) {
-      sortedLangs = cached.data;
-    } else {
-      error = e instanceof Error ? e.message : "Failed to fetch languages";
-    }
+    error = e instanceof Error ? e.message : "Failed to fetch languages";
   }
 }
 
