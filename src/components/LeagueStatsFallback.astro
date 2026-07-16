@@ -1,0 +1,36 @@
+---
+---
+
+<section>
+  <div class="flex flex-col space-y-5">
+    {/* Visible header */}
+    <div class="flex justify-between items-baseline animate-entrance animate-entrance-4">
+      <h2 class="text-2xl font-bold tracking-tight">league of legends</h2>
+      <span class="text-xs text-muted-foreground font-mono tracking-wide">yanpla#EUW</span>
+    </div>
+
+    {/* Invisible spacer for the stats grid so layout doesn't shift */}
+    <div class="invisible">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="flex flex-col space-y-3">
+          <div class="flex items-center space-x-2">
+            <div class="w-2.5 h-2.5" />
+            <span class="text-sm">&nbsp;</span>
+          </div>
+          <div class="w-full h-2.5"></div>
+          <span class="text-xs">&nbsp;</span>
+        </div>
+        <div class="flex flex-col space-y-3">
+          {
+            Array.from({ length: 3 }).map(() => (
+              <div class="flex items-center space-x-3">
+                <div class="w-6 h-6" />
+                <span class="text-sm">&nbsp;</span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

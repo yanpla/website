@@ -5,6 +5,8 @@ import Socials from "../components/Socials.astro";
 import TopLanguages from "../components/TopLanguages.astro";
 import SocialsFallback from "../components/SocialsFallback.astro";
 import TopLanguagesFallback from "../components/TopLanguagesFallback.astro";
+import LeagueStats from "../components/LeagueStats.astro";
+import LeagueStatsFallback from "../components/LeagueStatsFallback.astro";
 ---
 
 <Layout>
@@ -24,6 +26,11 @@ import TopLanguagesFallback from "../components/TopLanguagesFallback.astro";
         <TopLanguages server:defer>
           <TopLanguagesFallback slot="fallback" />
         </TopLanguages>
+      </div>
+      <div class="w-full">
+        <LeagueStats server:defer>
+          <LeagueStatsFallback slot="fallback" />
+        </LeagueStats>
       </div>
     </div>
   </main>
