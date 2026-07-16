@@ -27,11 +27,25 @@ import LeagueStatsFallback from "../components/LeagueStatsFallback.astro";
           <TopLanguagesFallback slot="fallback" />
         </TopLanguages>
       </div>
-      <div class="w-full">
+      {/* Easter egg: hidden until the visitor clicks the hero avatar (click again to hide) */}
+      <div class="w-full hidden" id="league-stats">
         <LeagueStats server:defer>
           <LeagueStatsFallback slot="fallback" />
         </LeagueStats>
       </div>
     </div>
   </main>
+
+  <script>
+    const league = document.getElementById("league-stats");
+    const setVisible = (visible: boolean) => {
+      league?.classList.toggle("hidden", !visible);
+      localStorage.setItem("gg", visible ? "1" : "");
+    };
+    if (localStorage.getItem("gg")) setVisible(true);
+
+    document.getElementById("hero-pfp")?.addEventListener("click", () => {
+      setVisible(league?.classList.contains("hidden") ?? false);
+    });
+  </script>
 </Layout>
