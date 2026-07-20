@@ -70,9 +70,9 @@ const fetchLeagueStats = async (): Promise<LeagueStats> => {
         `https://${platform}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}/top?count=3`,
       ),
       // Arena rating isn't in the public API; stats are aggregated from the
-      // last 20 Arena matches (queue 1700) instead
+      // last 20 Arena matches (queue 1740) instead
       riotFetch<string[]>(
-        `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=1700&count=20`,
+        `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=1740&count=20`,
       ),
     ]);
 
